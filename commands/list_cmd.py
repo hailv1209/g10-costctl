@@ -35,6 +35,7 @@ VERIFY
     pytest tests/test_list.py -v
 """
 import boto3
+from botocore.exceptions import ClientError
 
 from commands._common import parse_kv, tags_to_dict, tags_match
 
@@ -49,7 +50,21 @@ def _list_ec2(want, missing):
     Returns:
         list of (instance_id, instance_type, state, tags_dict) tuples
     """
-    raise NotImplementedError("TODO: implement _list_ec2 — see test_list.py for expected behavior")
+    ec2 = boto3.client("ec2")
+    rows = []
+    paginator = ec2.get_paginator("describe_instances")
+    for page in paginator.paginate():
+        for reservation in page["Reservations"]:
+            for instance in reservation["Instances"]:
+                tags = tags_to_dict(instance.get("Tags", []))
+                if tags_match(tags, want, missing):
+                    rows.append((
+                        instance["InstanceId"],
+                        instance["InstanceType"],
+                        instance["State"]["Name"],
+                        tags
+                    ))
+    return rows
 
 
 def _list_rds(want, missing):
@@ -61,7 +76,20 @@ def _list_rds(want, missing):
     Returns:
         list of (db_id, db_class, db_status, tags_dict) tuples
     """
-    raise NotImplementedError("TODO: implement _list_rds")
+    rds = boto3.client("rds")
+    rows = []
+    response = rds.describe_db_instances()
+    for db in response.get("DBInstances", []):
+        tags_resp = rds.list_tags_for_resource(ResourceName=db["DBInstanceArn"])
+        tags = tags_to_dict(tags_resp.get("TagList", []))
+        if tags_match(tags, want, missing):
+            rows.append((
+                db["DBInstanceIdentifier"],
+                db["DBInstanceClass"],
+                db["DBInstanceStatus"],
+                tags
+            ))
+    return rows
 
 
 def _list_s3(want, missing):
@@ -73,7 +101,19 @@ def _list_s3(want, missing):
     Returns:
         list of (bucket_name, "bucket", "active", tags_dict) tuples
     """
-    raise NotImplementedError("TODO: implement _list_s3")
+    s3 = boto3.client("s3")
+    rows = []
+    response = s3.list_buckets()
+    for bucket in response.get("Buckets", []):
+        name = bucket["Name"]
+        try:
+            tags_resp = s3.get_bucket_tagging(Bucket=name)
+            tags = tags_to_dict(tags_resp.get("TagSet", []))
+        except ClientError:
+            tags = {}
+        if tags_match(tags, want, missing):
+            rows.append((name, "bucket", "active", tags))
+    return rows
 
 
 def _list_volume(want, missing):
@@ -83,7 +123,21 @@ def _list_volume(want, missing):
         list of (volume_id, "<type>-<size>GB", state, tags_dict) tuples
         e.g. ("vol-0abc", "gp2-100GB", "in-use", {"purpose": "practice"})
     """
-    raise NotImplementedError("TODO: implement _list_volume")
+    ec2 = boto3.client("ec2")
+    rows = []
+    paginator = ec2.get_paginator("describe_volumes")
+    for page in paginator.paginate():
+        for volume in page["Volumes"]:
+            tags = tags_to_dict(volume.get("Tags", []))
+            if tags_match(tags, want, missing):
+                vol_type_size = f"{volume['VolumeType']}-{volume['Size']}GB"
+                rows.append((
+                    volume["VolumeId"],
+                    vol_type_size,
+                    volume["State"],
+                    tags
+                ))
+    return rows
 
 
 DISPATCH = {
@@ -108,4 +162,25 @@ def run(args):
         args.tag          — list[str], each "key=value"
         args.missing_tag  — list[str], each "key"
     """
-    raise NotImplementedError("TODO: implement run() — see module docstring")
+    # Parse tag filters
+    want = [parse_kv(t) for t in args.tag]
+    missing = args.missing_tag
+    
+    # Get rows from dispatcher
+    rows = DISPATCH[args.type](want, missing)
+    
+    # Format output
+    tag_str = ", ".join(f"{k}={v}" for k, v in want) if want else "all"
+    print(f"{args.type.upper()} {tag_str} — {len(rows)} found:")
+    print("-" * 78)
+    
+    for row in rows:
+        resource_id = row[0]
+        resource_info = row[1]
+        state = row[2]
+        tags_dict = row[3]
+        
+        # Format tags as key=value pairs
+        tags_str = ", ".join(f"{k}={v}" for k, v in tags_dict.items()) if tags_dict else ""
+        
+        print(f"  {resource_id:<30} {resource_info:<20} {state:<15} {tags_str}")

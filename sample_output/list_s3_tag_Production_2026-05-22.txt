@@ -1,0 +1,6 @@
+S3 Environment=Production — 4 found:
+------------------------------------------------------------------------------
+  webapp-group10-backend-bucket  bucket               active          Environment=Production, Owner=hungqt, CostCenter=G10, Application=AIRagChatbot, Name=webapp-group10-backend-bucket
+  webapp-group10-config-bucket   bucket               active          Environment=Production, Owner=hungqt, CostCenter=G10, Application=AIRagChatbot, Name=webapp-group10-config-bucket
+  webapp-group10-frontend-bucket bucket               active          Environment=Production, Owner=hungqt, CostCenter=G10, Application=AIRagChatbot, Name=webapp-group10-frontend-bucket
+  webapp-group10-knowledge-base-data-source bucket               active          Environment=Production, Owner=hungqt, CostCenter=G10, Application=AIRagChatbot, Name=webapp-group10-knowledge-base-data-source

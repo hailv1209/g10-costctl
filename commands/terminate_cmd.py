@@ -58,7 +58,17 @@ from commands._common import confirm
 
 def _terminate_ec2(rid, force):
     """Terminate one EC2 instance after confirmation."""
-    raise NotImplementedError("TODO: implement _terminate_ec2")
+    ec2 = boto3.client("ec2")
+    if confirm(f"Terminate EC2 {rid}?", force=force):
+        try:
+            ec2.terminate_instances(InstanceIds=[rid])
+            print(f"Terminated EC2 {rid}")
+        except ClientError as e:
+            code = e.response["Error"]["Code"]
+            message = e.response["Error"]["Message"]
+            print(f"AWS error [{code}]: {message}")
+    else:
+        print("Aborted.")
 
 
 def _terminate_rds(rid, force):
@@ -67,17 +77,54 @@ def _terminate_rds(rid, force):
     Full delete (delete_db_instance) requires a final snapshot decision —
     out of scope for this challenge. Stop is enough to stop billing.
     """
-    raise NotImplementedError("TODO: implement _terminate_rds")
+    rds = boto3.client("rds")
+    if confirm(f"Stop RDS {rid}?", force=force):
+        try:
+            rds.stop_db_instance(DBInstanceIdentifier=rid)
+            print(f"Stopped RDS {rid}")
+        except ClientError as e:
+            code = e.response["Error"]["Code"]
+            message = e.response["Error"]["Message"]
+            print(f"AWS error [{code}]: {message}")
+    else:
+        print("Aborted.")
 
 
 def _terminate_s3(rid, force):
     """Delete one S3 bucket — refuse if it has any objects."""
-    raise NotImplementedError("TODO: implement _terminate_s3")
+    s3 = boto3.client("s3")
+    try:
+        # Check if bucket has objects
+        obj_count = s3.list_objects_v2(Bucket=rid).get("KeyCount", 0)
+        if obj_count > 0:
+            print(f"Refusing — bucket {rid} has {obj_count} object(s). Empty it first.")
+            return
+        
+        # Bucket is empty, proceed with confirmation
+        if confirm(f"Delete S3 bucket {rid}?", force=force):
+            s3.delete_bucket(Bucket=rid)
+            print(f"Deleted S3 bucket {rid}")
+        else:
+            print("Aborted.")
+    except ClientError as e:
+        code = e.response["Error"]["Code"]
+        message = e.response["Error"]["Message"]
+        print(f"AWS error [{code}]: {message}")
 
 
 def _terminate_volume(rid, force):
     """Delete one EBS volume after confirmation."""
-    raise NotImplementedError("TODO: implement _terminate_volume")
+    ec2 = boto3.client("ec2")
+    if confirm(f"Delete volume {rid}?", force=force):
+        try:
+            ec2.delete_volume(VolumeId=rid)
+            print(f"Deleted volume {rid}")
+        except ClientError as e:
+            code = e.response["Error"]["Code"]
+            message = e.response["Error"]["Message"]
+            print(f"AWS error [{code}]: {message}")
+    else:
+        print("Aborted.")
 
 
 DISPATCH = {
@@ -96,4 +143,4 @@ def run(args):
         args.id     — resource identifier
         args.force  — bool, skip confirm if True
     """
-    raise NotImplementedError("TODO: implement run() — wrap DISPATCH[args.type] with try/except ClientError")
+    DISPATCH[args.type](args.id, args.force)
