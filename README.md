@@ -298,7 +298,16 @@ MIT — see `LICENSE`.
 ---
 
 ## Team
+- Lê Trần Tuấn Khanh
+- Trần Mạnh Trường
+- Trần Mạnh Cường
+- Nguyễn Đức Hảo
 - Lê Văn Hải
+- Phan Đức Huy
+- Lê Viết Quốc Hưng
+- Huỳnh Xuân Hậu
+- Nguyễn Thị Mến
+- Trần Quốc Hùng
 
 ---
 
