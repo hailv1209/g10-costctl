@@ -1,7 +1,6 @@
 # REFLECTIONS.md — costctl W6 Side Challenge
 
-## Group 10 - Nhận xét & Học tập
-
+## Group 10 - Lê Văn Hải
 ---
 
 ## 1. Multi-account: Mở rộng cho 100 AWS accounts
@@ -171,17 +170,4 @@ Cách tiếp cận:
 
 **Core insight:** W6 = "gọi AWS APIs". W7 = "gọi safely + audit trail". CLI là tool, risk management là real work.
 
----
 
-## Summary
-
-This challenge taught me:
-1. AWS API semantics matter more than the code — S3 tagging is destructive by design
-2. Testing is verification, not validation — I found real bugs only through execution
-3. Destructive operations need paranoia-level safeguards (multi-confirm, audit log, dry-run default)
-4. AI is 80% accurate on boilerplate but 0% accurate on edge cases — human verification is non-negotiable
-5. W6 is about building the tool; W7 is about building trust in the tool
-
----
-
-**Implementation Details:** 25/25 tests passing • 5 commands implemented • ~600 lines of code • 0 security vulnerabilities in core logic
